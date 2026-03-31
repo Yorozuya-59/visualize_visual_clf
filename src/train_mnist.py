@@ -38,7 +38,6 @@ def _():
 
 @app.cell
 def _(mo, os, torch, torchvision, transforms):
-    # 一時変数には `_` を付与してスコープを限定
     _data_dir = os.getenv('DATA_DIR')
 
     if not _data_dir:
@@ -46,13 +45,23 @@ def _(mo, os, torch, torchvision, transforms):
 
     print(f"Data directory: {_data_dir}")
 
-    _transform = transforms.Compose([
+    # 学習用のデータ拡張（オーグメンテーション）パイプライン
+    _train_transform = transforms.Compose([
+        transforms.RandomRotation(degrees=60), # ±60度のランダムな回転
+        transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1)), # 最大10%の平行移動とスケーリング
+        transforms.ToTensor(),
+        transforms.Lambda(lambda x: x + torch.randn_like(x) * 0.05), # ランダムなガウシアンノイズを付加
+        transforms.Normalize((0.5,), (0.5,))
+    ])
+
+    # 評価用（テスト）のパイプライン（拡張は行わず、テンソル化と正規化のみ）
+    _test_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
     ])
 
-    _train_dataset = torchvision.datasets.MNIST(root=_data_dir, train=True, download=True, transform=_transform)
-    _test_dataset = torchvision.datasets.MNIST(root=_data_dir, train=False, download=True, transform=_transform)
+    _train_dataset = torchvision.datasets.MNIST(root=_data_dir, train=True, download=True, transform=_train_transform)
+    _test_dataset = torchvision.datasets.MNIST(root=_data_dir, train=False, download=True, transform=_test_transform)
 
     # DataLoaderは他セルで使うため public のまま
     train_loader = torch.utils.data.DataLoader(_train_dataset, batch_size=64, shuffle=True)
@@ -97,10 +106,10 @@ def _(train_loader):
 
 @app.cell
 def _(device, summary):
-    from models import CNNNet
+    from models import AdvancedCNNNet
 
-    # SimpleNet から CNNNet へ変更
-    model = CNNNet().to(device)
+    # 新しい改良版CNNへ変更
+    model = AdvancedCNNNet().to(device)
 
     _model_summary = summary(model, input_size=(64, 1, 28, 28))
     _model_summary

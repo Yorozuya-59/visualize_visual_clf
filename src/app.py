@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import PIL.Image as Image
 import os
-from models import CNNNet
+from models import *
 
 # 1. モデルのセットアップ
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = CNNNet().to(device)
+model = AdvancedCNNNet().to(device)
 
 model_path = os.getenv('MODELS_DIR', '/home/workdir/models') + '/mnist_model.pth'
 model.load_state_dict(torch.load(model_path, map_location=device))
