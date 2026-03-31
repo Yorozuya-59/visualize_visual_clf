@@ -31,7 +31,7 @@ RUN pip install polars
 # Installation of libraries for machine learning
 RUN pip install scikit-learn 
 RUN pip install torch
-RUN pip install torcheval torchinfo 
+RUN pip install torcheval torchinfo torchvision
 RUN pip install tensorboard
 
 # Installation of libraries for visualization
