@@ -22,9 +22,6 @@ RUN pip install openai mcp
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 RUN apt install -y nodejs
 
-# Install for MCP
-RUN pip install mcp-server-fetch
-
 # Installation of libraries for data analysis
 RUN pip install polars
 
