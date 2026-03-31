@@ -25,9 +25,7 @@ def _():
 
     from mylib.initialize import init_settings, set_seeds
 
-
     init_settings(verbose=True)
-
 
     # マウントされている .env ファイルから環境変数を読み込む
     load_dotenv()
@@ -40,25 +38,25 @@ def _():
 
 @app.cell
 def _(mo, os, torch, torchvision, transforms):
-    # 環境変数からデータ保存先のパスを取得
-    data_dir = os.getenv('DATA_DIR')
+    # 一時変数には `_` を付与してスコープを限定
+    _data_dir = os.getenv('DATA_DIR')
 
-    if not data_dir:
+    if not _data_dir:
         mo.stop(True, "環境変数 'DATA_DIR' が設定されていません。./environment/.env ファイルを確認してください。")
 
-    print(f"Data directory: {data_dir}")
+    print(f"Data directory: {_data_dir}")
 
-    # 画像のテンソル変換と正規化
-    transform = transforms.Compose([
+    _transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
     ])
 
-    train_dataset = torchvision.datasets.MNIST(root=data_dir, train=True, download=True, transform=transform)
-    test_dataset = torchvision.datasets.MNIST(root=data_dir, train=False, download=True, transform=transform)
+    _train_dataset = torchvision.datasets.MNIST(root=_data_dir, train=True, download=True, transform=_transform)
+    _test_dataset = torchvision.datasets.MNIST(root=_data_dir, train=False, download=True, transform=_transform)
 
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=64, shuffle=False)
+    # DataLoaderは他セルで使うため public のまま
+    train_loader = torch.utils.data.DataLoader(_train_dataset, batch_size=64, shuffle=True)
+    test_loader = torch.utils.data.DataLoader(_test_dataset, batch_size=64, shuffle=False)
     return test_loader, train_loader
 
 
@@ -66,37 +64,40 @@ def _(mo, os, torch, torchvision, transforms):
 def _(train_loader):
     import matplotlib.pyplot as plt
     import numpy as np
-    # import torchvision
 
-    # 正規化されたテンソルを元の画像データ（[0, 1]の範囲）に戻す関数
+    # 他セル(推論確認)でも使うため関数として public に定義
     def imshow(img):
-        img = img / 2 + 0.5  # [-1, 1] を [0, 1] に戻す
+        img = img / 2 + 0.5  
         npimg = img.numpy()
         return np.transpose(npimg, (1, 2, 0))
 
-    # Dataloaderから1バッチ分のデータを取得
-    dataiter = iter(train_loader)
-    image_batch, label_batch = next(dataiter)
+    # 描画用の一時変数はすべてプライベート化
+    _dataiter = iter(train_loader)
+    _image_batch, _label_batch = next(_dataiter)
 
-    # 先頭の8枚を抽出して描画
-    num_images = 8
-    fig_data, axes_data = plt.subplots(1, num_images, figsize=(12, 3))
+    _num_images = 40
+    _rows, _cols = 4, 10
+    # 10列表示に合わせて横のサイズを大きく設定
+    _fig_data, _axes_data = plt.subplots(_rows, _cols, figsize=(20, 8))
 
-    for idx_i in range(num_images):
-        # 画像はモノクロ（グレースケール）で表示
-        axes_data[idx_i].imshow(imshow(image_batch[idx_i]), cmap='gray')
-        axes_data[idx_i].set_title(f"Label: {label_batch[idx_i].item()}")
-        axes_data[idx_i].axis('off')
+    # 2次元配列のaxesを1次元に平坦化してループ処理
+    _axes_flat = _axes_data.flatten()
 
-    fig_data.tight_layout()
+    for _idx in range(_num_images):
+        _axes_flat[_idx].imshow(imshow(_image_batch[_idx]), cmap='gray')
+        _axes_flat[_idx].set_title(f"Label: {_label_batch[_idx].item()}")
+        _axes_flat[_idx].axis('off')
 
-    # セルの最後にFigureオブジェクトを置くことでMarimo上に表示させます
-    fig_data
+    _fig_data.tight_layout()
+
+    # Marimo描画用
+    _fig_data
     return imshow, plt
 
 
 @app.cell
 def _(device, nn, summary):
+    # クラスとインスタンスは public に
     class SimpleNet(nn.Module):
         def __init__(self):
             super(SimpleNet, self).__init__()
@@ -114,91 +115,92 @@ def _(device, nn, summary):
 
     model = SimpleNet().to(device)
 
-    # torchinfoを利用したモデルアーキテクチャの出力
-    # (バッチサイズ64, チャンネル数1, 画像サイズ28x28)
-    model_summary = summary(model, input_size=(64, 1, 28, 28))
-    model_summary
+    _model_summary = summary(model, input_size=(64, 1, 28, 28))
+    _model_summary
     return (model,)
 
 
 @app.cell
 def _(device, model, nn, optim, tqdm, train_loader):
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    # 学習ループ内の変数は他セルから隠蔽する
+    _criterion = nn.CrossEntropyLoss()
+    _optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-    epochs = 5
+    _epochs = 5
     print("Starting training...")
 
-    for epoch in range(epochs):
+    for _epoch in range(_epochs):
         model.train()
-        running_loss = 0.0
+        _running_loss = 0.0
 
-        progress_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")
-        for images, labels in progress_bar:
-            images, labels = images.to(device), labels.to(device)
+        _progress_bar = tqdm(train_loader, desc=f"Epoch {_epoch+1}/{_epochs}")
+        for _images, _labels in _progress_bar:
+            _images, _labels = _images.to(device), _labels.to(device)
 
-            optimizer.zero_grad()
+            _optimizer.zero_grad()
 
-            outputs = model(images)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
+            _outputs = model(_images)
+            _loss = _criterion(_outputs, _labels)
+            _loss.backward()
+            _optimizer.step()
 
-            running_loss += loss.item()
-            progress_bar.set_postfix(loss=loss.item())
+            _running_loss += _loss.item()
+            _progress_bar.set_postfix(loss=_loss.item())
 
-        print(f"Epoch [{epoch+1}/{epochs}] Average Loss: {running_loss/len(train_loader):.4f}")
+        print(f"Epoch [{_epoch+1}/{_epochs}] Average Loss: {_running_loss/len(train_loader):.4f}")
     return
 
 
 @app.cell
 def _(model, os, torch):
-    model_dir = os.getenv('MODELS_DIR')
-    save_path = os.path.join(model_dir, 'mnist_model.pth')
-    torch.save(model.state_dict(), save_path)
-    print(f"Training complete. Model saved to {save_path}")
+    _model_dir = os.getenv('MODELS_DIR')
+
+    # Noneだった場合の安全策を追加
+    if not _model_dir:
+        _model_dir = '/home/workdir/models'
+
+    os.makedirs(_model_dir, exist_ok=True)
+    _save_path = os.path.join(_model_dir, 'mnist_model.pth')
+
+    torch.save(model.state_dict(), _save_path)
+    print(f"Training complete. Model saved to {_save_path}")
     return
 
 
 @app.cell
 def _(device, imshow, model, plt, test_loader, torch):
-    # モデルを推論モードに切り替え
     model.eval()
 
-    # テストデータから1バッチ取得
-    dataiter_test = iter(test_loader)
-    images_test, labels_test = next(dataiter_test)
+    _dataiter_test = iter(test_loader)
+    _images_test, _labels_test = next(_dataiter_test)
+    _images_test_device = _images_test.to(device)
 
-    # 推論を行うため、画像をデバイス（GPU/CPU）へ転送
-    images_test_device = images_test.to(device)
-
-    # 勾配計算を無効化して推論を実行
     with torch.no_grad():
-        preds = model(images_test_device)
-        # クラスごとの確率（ロジット）が最も高いインデックスを予測値として取得
-        _, predicted = torch.max(preds, 1)
+        _preds = model(_images_test_device)
+        _, _predicted = torch.max(_preds, 1)
 
-    # 結果の可視化（先頭の8枚）
-    num_display = 8
-    fig_pred, axes_pred = plt.subplots(1, num_display, figsize=(14, 3))
+    _num_display = 40
+    _rows_pred, _cols_pred = 4, 10
+    # 10列表示に合わせて横のサイズを大きく、タイトル2行分のため縦も調整
+    _fig_pred, _axes_pred = plt.subplots(_rows_pred, _cols_pred, figsize=(20, 10))
 
-    for idx_j in range(num_display):
-        # 画像の描画 (描画用にCPU上のデータを使用)
-        img = imshow(images_test[idx_j])
-        axes_pred[idx_j].imshow(img, cmap='gray')
+    # 2次元配列のaxesを1次元に平坦化してループ処理
+    _axes_pred_flat = _axes_pred.flatten()
 
-        true_label = labels_test[idx_j].item()
-        pred_label = predicted[idx_j].item()
+    for _idx in range(_num_display):
+        _img = imshow(_images_test[_idx])
+        _axes_pred_flat[_idx].imshow(_img, cmap='gray')
 
-        # 予測が正解なら黒文字、不正解なら赤文字でタイトルを表示
-        text_color = "black" if true_label == pred_label else "red"
-        axes_pred[idx_j].set_title(f"Pred: {pred_label}\nTrue: {true_label}", color=text_color)
-        axes_pred[idx_j].axis('off')
+        _true_label = _labels_test[_idx].item()
+        _pred_label = _predicted[_idx].item()
 
-    fig_pred.tight_layout()
+        _text_color = "black" if _true_label == _pred_label else "red"
+        _axes_pred_flat[_idx].set_title(f"Pred: {_pred_label}\nTrue: {_true_label}", color=_text_color)
+        _axes_pred_flat[_idx].axis('off')
 
-    # Marimo上に表示
-    fig_pred
+    _fig_pred.tight_layout()
+
+    _fig_pred
     return
 
 
