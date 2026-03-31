@@ -33,3 +33,4 @@ RUN pip install tensorboard
 
 # Installation of libraries for visualization
 RUN pip install matplotlib japanize-matplotlib seaborn
+RUN pip install gradio

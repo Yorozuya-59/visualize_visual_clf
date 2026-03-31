@@ -96,24 +96,11 @@ def _(train_loader):
 
 
 @app.cell
-def _(device, nn, summary):
-    # クラスとインスタンスは public に
-    class SimpleNet(nn.Module):
-        def __init__(self):
-            super(SimpleNet, self).__init__()
-            self.flatten = nn.Flatten()
-            self.fc1 = nn.Linear(28 * 28, 128)
-            self.relu = nn.ReLU()
-            self.fc2 = nn.Linear(128, 10)
+def _(device, summary):
+    from models import CNNNet
 
-        def forward(self, x):
-            x = self.flatten(x)
-            x = self.fc1(x)
-            x = self.relu(x)
-            x = self.fc2(x)
-            return x
-
-    model = SimpleNet().to(device)
+    # SimpleNet から CNNNet へ変更
+    model = CNNNet().to(device)
 
     _model_summary = summary(model, input_size=(64, 1, 28, 28))
     _model_summary

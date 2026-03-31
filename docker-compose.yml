@@ -8,6 +8,8 @@ services:
       - ./data:/home/workdir/data
       - ./models:/home/workdir/models
       - ./environment/.env:/home/workdir/.env
+    ports:
+      - "7860:7860"
     tty: true
     environment:
       - PYTHONPATH=/home/workdir/src
