@@ -1,5 +1,5 @@
 services:
-  analyse:
+  vision:
     build: 
       context: ./environment
       dockerfile: Dockerfile
@@ -15,3 +15,9 @@ services:
     tty: true
     environment:
       - PYTHONPATH=/home/workdir/src
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            capabilities: [gpu]
