@@ -1,0 +1,50 @@
+# Reference: https://github.com/github/gitignore/blob/main/Global/macOS.gitignore
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+
+# Reference: https://github.com/github/gitignore/blob/main/Python.gitignore
+# Byte-compiled / optimized / DLL files
+__pycache__
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Marimo
+__marimo__
+
+
+# Large files 
+*.h5
+*.pth
+*.pt
+*.log
+*.csv
+*.parquet
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.gif
+*.mp4
+*.mov
+

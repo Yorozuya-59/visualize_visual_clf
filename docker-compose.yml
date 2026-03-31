@@ -1,0 +1,17 @@
+services:
+  analyse:
+    build: 
+      context: ./environment
+      dockerfile: Dockerfile
+    volumes:
+      - ./src:/home/workdir/src
+      - ./data:/home/workdir/data
+      - ./models:/home/workdir/models
+      - ./logs:/home/workdir/logs
+      - ./figures:/home/workdir/figures
+      - ./marimo:/home/workdir/marimo
+      - ./environment/.env:/home/workdir/.env
+      - ./environment/mcp.json:/root/.vscode-server/data/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
+    tty: true
+    environment:
+      - PYTHONPATH=/home/workdir/src
